@@ -31,7 +31,7 @@ Pythonのパッケージは仮想環境にインストールする。
 参照：
 [pip と venv を使って仮想環境にパッケージをインストールする](https://packaging.python.org/ja/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
 
-1) 仮想環境を作成
+1) 仮想環境を作成( 初回のみ) 
 ```
 py -m venv .venv
 ```
