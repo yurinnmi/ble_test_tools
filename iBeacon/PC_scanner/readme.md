@@ -28,7 +28,7 @@ Pythonのパッケージは仮想環境にインストールする。
 
 ## python仮想環境
 
-以下参照：
+参照：
 [pip と venv を使って仮想環境にパッケージをインストールする](https://packaging.python.org/ja/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
 
 1) 仮想環境を作成
