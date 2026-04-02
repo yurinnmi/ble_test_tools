@@ -1,2 +1,3 @@
-# ble_test_tools
-BLE test tools
+# BLEを動作確認するためのツール
+
+- [WindowsPCでiBeaconをスキャン](/iBeacon/PC_scanner)
