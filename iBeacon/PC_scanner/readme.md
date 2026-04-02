@@ -39,7 +39,7 @@ py -m venv .venv
 ```
 .venv\Scripts\activate
 ```
-3) ( 初回のみ) pipの準備をする
+3) pipの準備をする( 初回のみ) 
 ```
 py -m pip install --upgrade pip
 ```
