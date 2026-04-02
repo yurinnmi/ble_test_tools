@@ -2,7 +2,7 @@
 
 - iBeacon をスキャン  
 - スキャン時間は 60秒 (SCAN_SECONDSで定義）
-- 新規検出ibeoconのUUID / Major / Minor / TxPower / RSSI を表示  
+- 新規検出ibeaconのUUID / Major / Minor / TxPower / RSSI を表示  
 - 重複は表示しない。更新は表示する。  （PRINT_DUPLICATESで切り替え）
 - CSV に追記保存
 - スキャン時間終了、または、Ctrl+C で終了  
