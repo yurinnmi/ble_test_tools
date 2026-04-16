@@ -30,7 +30,7 @@ iBeacon UUID=2D7A9F0C-E0E8-4CC9-A71B-A21DB2D034A1<br>
 M5Unified 用ライブラリ：をインストールしてください。<br>
 （ライブラリ名：M5Unified )
 
-board名: M5Core)　を選択してください。<br>
+board名: M5Core　を選択してください。<br>
 
 COMポート名はお使いの環境に合うよう変更してください。<br>
 
