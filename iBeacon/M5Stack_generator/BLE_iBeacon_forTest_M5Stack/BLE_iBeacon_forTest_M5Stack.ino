@@ -1,147 +1,85 @@
 /*
-   Create a BLE server that will send periodic iBeacon frames.
-   The design of creating the BLE server is:
-   1. Create a BLE Server
-   2. Create advertising data
-   3. Start advertising.
-   4. wait
-   5. Stop advertising.
+   iBeacon example
+   - No custom GATT service / characteristic
+   - Only advertising as iBeacon
 */
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
-#include <BLEBeacon.h>
-
 #include <M5Unified.h>
 
-#define DEVICE_NAME            "ESP32"
-#define SERVICE_UUID           "7A0247E7-8E88-409B-A959-AB5092DDB03E"
-#define BEACON_UUID            "2D7A9F0C-E0E8-4CC9-A71B-A21DB2D034A1"
-#define BEACON_UUID_REV        "A134D0B2-1DA2-1BA7-C94C-E8E00C9F7A2D"
-#define CHARACTERISTIC_UUID    "82258BAA-DF72-47E8-99BC-B73D7ECD08A5"
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEBeacon.h>
 
-BLEServer *pServer;
-BLECharacteristic *pCharacteristic;
-uint8_t value = 0;
+#define MAJOR_ID (5)
+#define MINOR_ID (88)
 
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-      Serial.println("The device was Connected!");
-    };
+#define DEVICE_NAME      "M5STACK"
+#define BEACON_UUID  "A134D0B2-1DA2-1BA7-C94C-E8E00C9F7A2D"
 
-    void onDisconnect(BLEServer* pServer) {
-      Serial.println("The deviceConnected was removed!");
+static BLEAdvertising *g_pAdvertising = nullptr;
 
-      // Restart advertising to be visible and connectable again
-      BLEAdvertising* pAdvertising;
-      pAdvertising = pServer->getAdvertising();
-      pAdvertising->start();
-      Serial.println("iBeacon advertising restarted");
-    }
-};
-
-class MyCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string rxValue = pCharacteristic->getValue();
-
-      if (rxValue.length() > 0) {
-        Serial.println("*********");
-        Serial.print("Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++) {
-          Serial.print(rxValue[i]);
-        }
-        Serial.println();
-        Serial.println("*********");
-
-      }
-    }
-};
-
-
-void init_service() {
-  BLEAdvertising* pAdvertising;
-  pAdvertising = pServer->getAdvertising();
-  pAdvertising->stop();
-
-  // Create the BLE Service
-  BLEService *pService = pServer->createService(BLEUUID(SERVICE_UUID));
-
-  // Create a BLE Characteristic
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  |
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-  pCharacteristic->setCallbacks(new MyCallbacks());
-  pCharacteristic->addDescriptor(new BLE2902());
-
-  pAdvertising->addServiceUUID(BLEUUID(SERVICE_UUID));
-  pAdvertising->setMaxInterval(500);
-  pAdvertising->setMinInterval(200);
-
-  // Start the service
-  pService->start();
-
-  pAdvertising->start();
-}
-
-void init_beacon() {
-  BLEAdvertising* pAdvertising;
-  pAdvertising = pServer->getAdvertising();
-  pAdvertising->stop();
-  // iBeacon
+void init_ibeacon()
+{
   BLEBeacon myBeacon;
-  myBeacon.setManufacturerId(0x4c00);
-  myBeacon.setMajor(5);
-  myBeacon.setMinor(88);
-  myBeacon.setSignalPower(0xc5);
-  myBeacon.setProximityUUID(BLEUUID(BEACON_UUID_REV));
-
   BLEAdvertisementData advertisementData;
+
+  if (g_pAdvertising == nullptr)
+  {
+    return;
+  }
+
+  g_pAdvertising->stop();
+
+  // iBeacon parameters
+  myBeacon.setManufacturerId(0x4c00);                 // Apple Company ID
+  myBeacon.setMajor(MAJOR_ID);                               // Major ID
+  myBeacon.setMinor(MINOR_ID);                              // Minor ID
+  myBeacon.setSignalPower(0xc5);                      // Measured Power (-59 dBm 相当)
+  myBeacon.setProximityUUID(BLEUUID(BEACON_UUID));
+
   advertisementData.setFlags(0x1A);
   advertisementData.setManufacturerData(myBeacon.getData());
-  pAdvertising->setAdvertisementData(advertisementData);
 
-//  pAdvertising->start();
+  g_pAdvertising->setAdvertisementData(advertisementData);
+
+  // 任意: advertising interval
+  g_pAdvertising->setMinInterval(160); // 160 * 0.625ms = 100ms
+  g_pAdvertising->setMaxInterval(200); // 200 * 0.625ms = 125ms
 }
 
-void setup() {
+void setup()
+{
   M5.begin();
   M5.Lcd.fillScreen(TFT_WHITE);
 
   Serial.begin(115200);
   Serial.println();
-  Serial.println("Initializing...");
+  Serial.println("Initializing iBeacon only...");
   Serial.flush();
 
   BLEDevice::init(DEVICE_NAME);
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
 
-  init_service();
-  init_beacon();
+  // GATT server は作らず、Advertising だけ使う
+  g_pAdvertising = BLEDevice::getAdvertising();
 
-  Serial.println("iBeacon + service defined and advertising!");
-  Serial.printf("*** NOTIFY: %d ***\n", value);
-  pCharacteristic->setValue(&value, 1);
-  pCharacteristic->notify();
+  init_ibeacon();
+
   Serial.println("Please press A button to start iBeacon...");
+  Serial.println("Major ID = 5, Minor ID = 88");
 
   M5.Lcd.setCursor(10, 10);
   M5.Lcd.setTextColor(BLACK);
   M5.Lcd.setTextSize(3);
-  M5.Lcd.print("Please press A button to start iBeacon...\n");
-
+  M5.Lcd.print("Please press A button\nto start iBeacon...\n");
 }
 
-void loop() {
-  if(M5.BtnA.wasPressed())
+void loop()
+{
+  if (M5.BtnA.wasPressed())
   {
-    BLEAdvertising* pAdvertising;
-    pAdvertising = pServer->getAdvertising();
-    pAdvertising->start();
+    if (g_pAdvertising != nullptr)
+    {
+      g_pAdvertising->start();
+    }
 
     M5.Display.clear();
     M5.Display.fillScreen(TFT_BLUE);
@@ -149,17 +87,19 @@ void loop() {
     M5.Display.setTextColor(YELLOW);
     M5.Display.setTextSize(3);
     M5.Display.print("Start iBeacon.\n");
-    M5.Display.print("interval=200-500ms\n");
+    M5.Display.print("interval=100-125ms\n");
     M5.Display.print("Major ID=5\n");
     M5.Display.print("Minor ID=88\n");
-    Serial.println("Start iBeacon! interval=200-500ms Major,Minor ID=5,88");
+
+    Serial.println("Start iBeacon! interval=100-125ms Major,Minor ID=5,88");
   }
 
-  if(M5.BtnB.wasPressed())
+  if (M5.BtnB.wasPressed())
   {
-    BLEAdvertising* pAdvertising;
-    pAdvertising = pServer->getAdvertising();
-    pAdvertising->stop();
+    if (g_pAdvertising != nullptr)
+    {
+      g_pAdvertising->stop();
+    }
 
     M5.Display.clear();
     M5.Display.fillScreen(TFT_WHITE);
@@ -167,6 +107,7 @@ void loop() {
     M5.Display.setTextColor(BLACK);
     M5.Display.setTextSize(3);
     M5.Display.print("Stop iBeacon.\n");
+
     Serial.println("Stop iBeacon.");
   }
 
